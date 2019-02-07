@@ -11,12 +11,14 @@ import java.awt.MenuItem;
 import java.awt.PopupMenu;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URL;
 
+import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 
+import dataObjects.Window;
 import test.Watcher;
 
 /**
@@ -56,7 +58,7 @@ public class GUI {
 	 */
 	@SuppressWarnings("unused")
 	public GUI(final Runnable runnable, final Thread telescope) {
-		this.setupTrayIcon("images/icon.png");
+		this.setupTrayIcon("src/gui/images/icon.png");
 
 		// if pie chart option is chosen, show pie chart.
 		this.pieChartItem.addActionListener(e -> {
@@ -67,7 +69,8 @@ public class GUI {
 		this.gitHubItem.addActionListener(e -> {
 			final String url_open = "https://github.com/GoheX/Kronos";
 			try {
-				java.awt.Desktop.getDesktop().browse(java.net.URI.create(url_open));
+				//java.awt.Desktop.getDesktop().browse(java.net.URI.create(url_open));
+				Runtime.getRuntime().exec(new String[]{"cmd", "/c","start chrome "+url_open});
 			}
 			catch (final IOException e1) {
 				e1.printStackTrace();
@@ -86,15 +89,35 @@ public class GUI {
 
 		// Pause / go
 		// this also updates icon
+		String iconLocation = "src/gui/images";
+
 		this.pauseGo.addActionListener(e -> {
-			if (this.paused == true) {
-				final Image image = new ImageIcon(this.getClass().getResource("images/icon.png")).getImage();
+			if (this.paused == false) {
+				Image image = null;
+				try {
+					File pathToFile = new File(iconLocation + "/pausedIcon.png");
+					FileInputStream fis = new FileInputStream(pathToFile);
+					image = ImageIO.read(fis);
+				}
+				catch(Exception ee){
+					System.err.println(ee);
+				}
+				//final Image image = this.createImage(, "tray icon");
 				this.trayIcon.setImage(image);
 				((Watcher) runnable).resume();
 				this.paused = false;
 			}
 			else {
-				final Image image = new ImageIcon(this.getClass().getResource("images/pausedIcon.png")).getImage();
+				Image image = null;
+				try {
+					File pathToFile = new File(iconLocation + "/icon.png");
+					FileInputStream fis = new FileInputStream(pathToFile);
+					image = ImageIO.read(fis);
+				}
+				catch(Exception ee){
+					System.err.println(ee);
+				}
+				//final Image image = this.createImage(, "tray icon");
 				this.trayIcon.setImage(image);
 				((Watcher) runnable).pause();
 				this.paused = true;
@@ -118,7 +141,12 @@ public class GUI {
 	 * @return the image
 	 */
 	protected Image createImage(final String path, final String description) {
-		final URL imageURL = GUI.class.getResource(path);
+		URL imageURL = null;
+		try {
+			imageURL = new File(path).toURI().toURL();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
 
 		if (imageURL == null) {
 			System.err.println("Resource not found: " + path);
